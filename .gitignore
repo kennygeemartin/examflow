@@ -1,0 +1,9 @@
+.runtime/
+.venv/
+__pycache__/
+*.sqlite3*
+python-runtime.zip
+/tokenizer.json
+models/tokenizer.json
+*.keras
+*.log
