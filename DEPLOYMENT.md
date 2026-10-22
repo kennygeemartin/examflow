@@ -25,7 +25,23 @@ For a disposable demonstration only, set `EXAMFLOW_DEMO=true` before the first d
 - PostgreSQL transactions serialize modifications to preserve the current SQLite workflow's save semantics. This is intentionally conservative; load-test before large cohorts.
 - The serverless entry point does not start a background server or timeout thread. Each authenticated operation finalizes expired scripts based on their saved server deadline. Even if a candidate disconnects, a later save cannot add time or change the final saved answer. Operational finalization is lazy until the next authenticated request; a scheduler would be needed for immediate unattended processing.
 - HTTPS deployments use Secure, HttpOnly, SameSite session cookies.
-- The model and tokenizer are not in GitHub or the Vercel bundle. The model screen reports `model_required`; question generation needs a separate inference deployment. Human examination and review functions do not require TensorFlow.
+- The TensorFlow.js model bundle is served publicly from the Vercel application. Question generation runs in the lecturer's browser; no separate inference host or inference-service billing is required. Human examination and review functions do not require TensorFlow.
+
+## Question generation without a separate inference host
+
+The exported TensorFlow.js weights and original tokenizer are in `public/assets/generator/` and are served as static Vercel assets. Inference runs in the lecturer's browser; only the generated draft and model-version hashes are sent to the application API for storage. TensorFlow.js is loaded from the pinned jsDelivr package in `app/index.html`.
+
+The browser model is publicly downloadable. Do not use this deployment method if the model or tokenizer must remain confidential. Browser performance depends on the lecturer's device; the initial model download is about 3.5 MB and is cacheable. Static downloads use your existing Vercel plan and its usage limits. The original `.keras` model stays excluded from Git.
+
+To regenerate browser assets after changing the model or tokenizer, install the exporter dependency in a separate Python environment with the matching TensorFlow version, then run:
+
+```powershell
+python -m pip install -r requirements-model.txt
+python -m pip install -r requirements-browser-export.txt
+python scripts/export_browser_model.py
+```
+
+Commit the regenerated files under `app/assets/generator/`, then redeploy Vercel. The API verifies that submitted drafts reference the deployed model and tokenizer hashes; drafts remain unapproved until a lecturer reviews them.
 
 ## Troubleshooting
 

@@ -4,6 +4,8 @@ A local browser application for preparing, conducting and reviewing subjective e
 
 For Vercel hosting, follow [DEPLOYMENT.md](DEPLOYMENT.md). The hosted entry point uses PostgreSQL through `DATABASE_URL`; your PC's SQLite database is not uploaded.
 
+Hosted question generation runs in the lecturer's browser using public TensorFlow.js model assets, so it needs no separate inference host or inference-service billing. See [DEPLOYMENT.md](DEPLOYMENT.md). The model bundle is public and downloadable.
+
 ## Start
 
 Use Python 3.10 or newer. In PowerShell in this folder:

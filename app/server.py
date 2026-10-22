@@ -10,6 +10,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from domain import Store, Error
+import browser_model
 from inference import status, generate
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -20,15 +21,16 @@ failures = {}
 class Handler(BaseHTTPRequestHandler):
     secure_cookie = False
 
-    def reply(self, status_code, data, cookie=None, content_type='application/json'):
-        body = json.dumps(data).encode() if content_type == 'application/json' else data
+    def reply(self, status_code, data, cookie=None, content_type='application/json',
+              content_security_policy="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'"):
+        body = data if isinstance(data, bytes) else json.dumps(data).encode()
         self.send_response(status_code)
         self.send_header('Content-Type', content_type)
         self.send_header('Content-Length', str(len(body)))
         self.send_header('Cache-Control', 'no-store')
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('X-Frame-Options', 'DENY')
-        self.send_header('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'")
+        self.send_header('Content-Security-Policy', content_security_policy)
         if cookie:
             if self.secure_cookie:
                 cookie += '; Secure'
@@ -42,10 +44,25 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split('?')[0]
-        if path in ['/', '/style.css', '/client.js', '/assets/examination-background.png']:
+        if path.startswith('/assets/generator/'):
+            filename = path.removeprefix('/assets/generator/')
+            if filename not in browser_model.asset_files():
+                self.reply(404, {'error': 'Not found'})
+                return
+            asset = browser_model.ASSET_DIR / filename
+            if not asset.is_file():
+                self.reply(404, {'error': 'Not found'})
+                return
+            mime = 'application/json' if asset.suffix == '.json' else 'application/octet-stream'
+            self.reply(200, asset.read_bytes(), content_type=mime)
+        elif path in ['/', '/style.css', '/client.js', '/browser_inference.js', '/assets/examination-background.png']:
             name = 'index.html' if path == '/' else path[1:]
-            mime = {'index.html': 'text/html; charset=utf-8', 'style.css': 'text/css', 'client.js': 'text/javascript', 'assets/examination-background.png': 'image/png'}[name]
-            self.reply(200, (ROOT / name).read_bytes(), content_type=mime)
+            mime = {'index.html': 'text/html; charset=utf-8', 'style.css': 'text/css; charset=utf-8', 'client.js': 'text/javascript; charset=utf-8', 'browser_inference.js': 'text/javascript; charset=utf-8', 'assets/examination-background.png': 'image/png'}[name]
+            policy = None
+            if path == '/':
+                policy = "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-eval'; frame-ancestors 'none'"
+            self.reply(200, (ROOT / name).read_bytes(), content_type=mime,
+                       **({'content_security_policy': policy} if policy else {}))
         else:
             self.reply(404, {'error': 'Not found'})
 
@@ -72,12 +89,21 @@ class Handler(BaseHTTPRequestHandler):
                 failures.pop(ip, None)
                 self.reply(200, {'ok': True}, 'session=' + token + '; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800')
                 return
-            if action in ['model', 'generate']:
+            if action in ['model', 'generate', 'store_browser_draft']:
                 with store.db() as db:
                     u = store.user(db, self.token())
                     store.require(u, 'lecturer', 'administrator' if action == 'model' else 'lecturer')
                 if action == 'model':
-                    result = status()
+                    result = browser_model.status()
+                    if result['generator'] != 'browser_ready':
+                        result = status()
+                elif action == 'store_browser_draft':
+                    result = browser_model.validate_draft(p)
+                    with store.db() as db:
+                        result['id'] = secrets.token_hex(12)
+                        result['author'] = u['id']
+                        store.put(db, 'generated_draft', result)
+                        store.audit(db, u, 'generate_draft', result['id'], result['model_version'])
                 else:
                     result = generate(p['seed'], p.get('count', 25))
                     with store.db() as db:

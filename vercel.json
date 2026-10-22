@@ -13,6 +13,7 @@
     { "src": "/", "dest": "/api/index" },
     { "src": "/style.css", "dest": "/api/index" },
     { "src": "/client.js", "dest": "/api/index" },
+    { "src": "/browser_inference.js", "dest": "/api/index" },
     { "src": "/assets/examination-background.png", "dest": "/api/index" },
     { "src": "/api/.*", "dest": "/api/index" }
   ]
