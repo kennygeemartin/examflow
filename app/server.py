@@ -95,7 +95,13 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(503, {'error': 'Generation needs TensorFlow and NumPy. Install requirements-model.txt in your Python environment.'})
         except Exception as e:
             print('Request failed:', repr(e))
-            self.reply(500, {'error': 'The operation failed. No save acknowledgement was issued. Check the server console.'})
+            # Codes identify database failures without exposing queries or credentials.
+            details = {'error': 'The operation failed. No save acknowledgement was issued. Check the server console.'}
+            sqlstate = getattr(e, 'sqlstate', None)
+            if isinstance(sqlstate, str) and len(sqlstate) == 5 and sqlstate.isalnum():
+                details['database_error_code'] = sqlstate
+            details['error_type'] = type(e).__name__
+            self.reply(500, details)
 
 
 def main():
