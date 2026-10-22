@@ -21,6 +21,7 @@ For a disposable demonstration only, set `EXAMFLOW_DEMO=true` before the first d
 - `/` serves the sign-in interface even before a database is configured.
 - An API request without `DATABASE_URL` returns a JSON setup message with HTTP 503.
 - Sessions, answer revisions, receipts and academic reviews persist in PostgreSQL across function instances and deployments.
+- Hosted tables live in the dedicated `examflow` schema to avoid collisions with existing tables in `public`. Existing public tables are left untouched.
 - PostgreSQL transactions serialize modifications to preserve the current SQLite workflow's save semantics. This is intentionally conservative; load-test before large cohorts.
 - The serverless entry point does not start a background server or timeout thread. Each authenticated operation finalizes expired scripts based on their saved server deadline. Even if a candidate disconnects, a later save cannot add time or change the final saved answer. Operational finalization is lazy until the next authenticated request; a scheduler would be needed for immediate unattended processing.
 - HTTPS deployments use Secure, HttpOnly, SameSite session cookies.

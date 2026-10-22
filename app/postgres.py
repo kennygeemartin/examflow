@@ -24,6 +24,9 @@ class Connection:
         self.connection = psycopg.connect(url, row_factory=dict_row, connect_timeout=10)
         # Preserve SQLite's serialized write semantics across serverless instances.
         self.connection.execute('SELECT pg_advisory_xact_lock(718345902)')
+        # Generic names such as users/sessions may already exist in public.
+        # Scope all application queries to the application's own schema.
+        self.connection.execute('SET LOCAL search_path TO examflow, pg_catalog')
 
     def execute(self, sql, parameters=()):
         import psycopg
@@ -49,6 +52,7 @@ class Connection:
 
 
 SCHEMA = '''
+CREATE SCHEMA IF NOT EXISTS examflow;
 CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, name TEXT, role TEXT, salt TEXT, password TEXT);
 CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, user_id TEXT, expires DOUBLE PRECISION);
 CREATE TABLE IF NOT EXISTS records(id TEXT PRIMARY KEY, kind TEXT, body TEXT, rowid BIGSERIAL UNIQUE);

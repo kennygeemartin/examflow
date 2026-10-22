@@ -13,10 +13,21 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'app'))
 import server
 from hosting import hosted_store
-from postgres import Row
+from postgres import Row, SCHEMA, Connection
 
 
 class Hosting(unittest.TestCase):
+    def test_postgres_queries_are_scoped_to_application_schema(self):
+        from types import SimpleNamespace
+        from unittest.mock import MagicMock
+        connection = MagicMock()
+        psycopg = SimpleNamespace(connect=MagicMock(return_value=connection))
+        rows = SimpleNamespace(dict_row=object())
+        with patch.dict(sys.modules, {'psycopg': psycopg, 'psycopg.rows': rows}):
+            Connection('postgresql://unused-test-placeholder')
+        self.assertEqual(connection.execute.call_args_list[-1].args[0], 'SET LOCAL search_path TO examflow, pg_catalog')
+        self.assertTrue(SCHEMA.strip().startswith('CREATE SCHEMA IF NOT EXISTS examflow;'))
+
     def test_missing_database_fails_clearly(self):
         with patch.dict(os.environ, {}, clear=True):
             with self.assertRaisesRegex(ValueError, 'DATABASE_URL'):
