@@ -42,9 +42,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split('?')[0]
-        if path in ['/', '/style.css', '/client.js']:
+        if path in ['/', '/style.css', '/client.js', '/assets/examination-background.png']:
             name = 'index.html' if path == '/' else path[1:]
-            mime = {'index.html': 'text/html; charset=utf-8', 'style.css': 'text/css', 'client.js': 'text/javascript'}[name]
+            mime = {'index.html': 'text/html; charset=utf-8', 'style.css': 'text/css', 'client.js': 'text/javascript', 'assets/examination-background.png': 'image/png'}[name]
             self.reply(200, (ROOT / name).read_bytes(), content_type=mime)
         else:
             self.reply(404, {'error': 'Not found'})

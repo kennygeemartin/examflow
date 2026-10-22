@@ -43,7 +43,7 @@ class Hosting(unittest.TestCase):
         config = json.loads((ROOT / 'vercel.json').read_text())
         self.assertEqual(config['outputDirectory'], 'public')
         self.assertTrue((ROOT / 'public').is_dir())
-        self.assertEqual({r['src'] for r in config['routes']}, {'/', '/style.css', '/client.js', '/api/.*'})
+        self.assertEqual({r['src'] for r in config['routes']}, {'/', '/style.css', '/client.js', '/assets/examination-background.png', '/api/.*'})
 
     def test_serverless_entry_renders_without_database(self):
         spec = importlib.util.spec_from_file_location('vercel_entry', ROOT / 'api' / 'index.py')

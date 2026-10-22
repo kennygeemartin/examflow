@@ -43,7 +43,7 @@ class HTTPIntegration(unittest.TestCase):
         return self.client.open(request)
 
     def test_static_and_authenticated_flow(self):
-        for path in ['/', '/client.js', '/style.css']:
+        for path in ['/', '/client.js', '/style.css', '/assets/examination-background.png']:
             with self.client.open(self.url + path) as response:
                 self.assertEqual(response.status, 200)
                 self.assertTrue(response.read())
