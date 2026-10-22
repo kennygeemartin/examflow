@@ -2,6 +2,7 @@ import argparse
 import http.cookies
 import json
 import pathlib
+import re
 import secrets
 import sqlite3
 import time
@@ -100,6 +101,9 @@ class Handler(BaseHTTPRequestHandler):
             sqlstate = getattr(e, 'sqlstate', None)
             if isinstance(sqlstate, str) and len(sqlstate) == 5 and sqlstate.isalnum():
                 details['database_error_code'] = sqlstate
+            primary = getattr(getattr(e, 'diag', None), 'message_primary', '') or ''
+            if sqlstate == '42883' and re.fullmatch(r'(operator does not exist: [A-Za-z0-9_ ]+ [=<>!~]+ [A-Za-z0-9_ ]+|function [A-Za-z0-9_.]+\([A-Za-z0-9_, ]*\) does not exist)', primary):
+                details['database_error_detail'] = primary
             details['error_type'] = type(e).__name__
             self.reply(500, details)
 
