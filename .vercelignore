@@ -1,0 +1,13 @@
+.runtime
+.venv
+.git
+tests
+models
+*.keras
+*.sqlite3*
+*.zip
+*.log
+tokenizer.json
+export_from_colab.py
+requirements-model.txt
+requirements-model.lock.txt

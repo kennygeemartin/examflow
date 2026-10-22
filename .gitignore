@@ -7,3 +7,7 @@ python-runtime.zip
 models/tokenizer.json
 *.keras
 *.log
+.env
+.env.*
+!.env.example
+.vercel/

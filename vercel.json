@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60,
+      "excludeFiles": "{.runtime/**,.venv/**,.git/**,tests/**,models/**,*.keras,*.sqlite3*,*.zip,*.log,tokenizer.json}"
+    }
+  },
+  "routes": [
+    { "src": "/", "dest": "/api/index" },
+    { "src": "/style.css", "dest": "/api/index" },
+    { "src": "/client.js", "dest": "/api/index" },
+    { "src": "/api/.*", "dest": "/api/index" }
+  ]
+}

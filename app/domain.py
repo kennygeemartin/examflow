@@ -19,8 +19,13 @@ def digest(value):
 class Store:
     def __init__(self, path):
         self.path = path
+        self.postgres = path.startswith(('postgres://', 'postgresql://'))
         with self.db() as db:
-            db.executescript('''
+            if self.postgres:
+                from postgres import SCHEMA
+                db.executescript(SCHEMA)
+            else:
+                db.executescript('''
             PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, name TEXT, role TEXT, salt TEXT, password TEXT);
             CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, user_id TEXT, expires REAL);
@@ -30,10 +35,15 @@ class Store:
 
     @contextmanager
     def db(self):
-        db = sqlite3.connect(self.path, timeout=30)
-        db.row_factory = sqlite3.Row
+        if self.postgres:
+            from postgres import Connection
+            db = Connection(self.path)
+        else:
+            db = sqlite3.connect(self.path, timeout=30)
+            db.row_factory = sqlite3.Row
         try:
-            db.execute('BEGIN IMMEDIATE')
+            if not self.postgres:
+                db.execute('BEGIN IMMEDIATE')
             yield db
             db.commit()
         except Exception:
@@ -77,7 +87,7 @@ class Store:
         existing = db.execute('SELECT kind FROM records WHERE id=?', (obj['id'],)).fetchone()
         if existing and existing[0] != kind:
             raise Error('This identifier is already used by another record type.')
-        db.execute('INSERT INTO records VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body', (obj['id'], kind, json.dumps(obj)))
+        db.execute('INSERT INTO records(id,kind,body) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body', (obj['id'], kind, json.dumps(obj)))
         return obj
 
     def audit(self, db, user, action, rid, detail=''):

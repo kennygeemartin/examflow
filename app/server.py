@@ -17,6 +17,8 @@ failures = {}
 
 
 class Handler(BaseHTTPRequestHandler):
+    secure_cookie = False
+
     def reply(self, status_code, data, cookie=None, content_type='application/json'):
         body = json.dumps(data).encode() if content_type == 'application/json' else data
         self.send_response(status_code)
@@ -27,6 +29,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Frame-Options', 'DENY')
         self.send_header('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'")
         if cookie:
+            if self.secure_cookie:
+                cookie += '; Secure'
             self.send_header('Set-Cookie', cookie)
         self.end_headers()
         self.wfile.write(body)

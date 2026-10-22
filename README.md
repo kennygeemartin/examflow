@@ -2,6 +2,8 @@
 
 A local browser application for preparing, conducting and reviewing subjective examinations. Built from the two supplied system descriptions. The application server uses Python's standard library and SQLite; it needs no npm packages or cloud service.
 
+For Vercel hosting, follow [DEPLOYMENT.md](DEPLOYMENT.md). The hosted entry point uses PostgreSQL through `DATABASE_URL`; your PC's SQLite database is not uploaded.
+
 ## Start
 
 Use Python 3.10 or newer. In PowerShell in this folder:
